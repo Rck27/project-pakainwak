@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+        }
+        .container {
+            width: 80%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+        .slider {
+            width: 100%;
+            height: 50px;
+            margin-bottom: 20px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin-right: 10px;
+            border: 2px solid #2196F3; /* Added border for visibility */
+            border-radius: 34px; /* Rounded border */
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider, .slider:before {
+            box-sizing: border-box;
+            transition: .4s;
+        }
+        .slider:before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 26px;
+            height: 26px;
+            bottom: 4px;
+            background-color: white;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .value {
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+        }
+        .send-button {
+    background-color: #2196F3; /* Button color */
+    color: white; /* Text color */
+    border: none;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+        .counters-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .add-counter {
+            cursor: pointer;
+            user-select: none;
+            padding: 10px;
+            margin-right: 10px;
+            font-size: 2em;
+            line-height: 1;
+        }
+        .counter {
+            cursor: pointer;
+            user-select: none;
+            padding: 10px;
+            margin-right: 10px;
+            background: #333;
+            border-radius: 5px;
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .button-text-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="button-text-container">
+            <label class="switch">
+                <input type="checkbox">
+                <span class="slider"></span>
+            </label>
+            <label class="value" id="demo"></label>
+        </div>
+        <input type="range" min="0" max="100" value="50" class="slider" id="myRange">
+        <div class="counters-container" id="counters">
+            <div class="add-counter" onclick="addCounter()">+</div>
+        </div>
+    </div>
+    <script>
+        let currentCounterId = null;
+        let counterId = 0;
+        const slider = document.getElementById("myRange");
+        const output = document.getElementById("demo");
+        output.innerHTML = slider.value;
+
+        slider.oninput = function() {
+            output.innerHTML = this.value;
+            if (currentCounterId !== null) {
+                const counterElement = document.getElementById('counter-' + currentCounterId);
+                counterElement.textContent = this.value;
+                if (this.value == '0') {
+                    counterElement.remove();
+                    currentCounterId = null;
+                }
+            }
+        }
+
+        function addCounter() {
+            if(counterId <= 5){
+            counterId++;
+            const counterElement = document.createElement('div');
+            counterElement.classList.add('counter');
+            counterElement.id = 'counter-' + counterId;
+            counterElement.textContent = '0';
+            counterElement.onclick = function() { editCounter(counterId); };
+            document.getElementById('counters').appendChild(counterElement);
+        }
+        }
+
+        function editCounter(id) {
+            currentCounterId = id;
+            const counterElement = document.getElementById('counter-' + id);
+            slider.value = counterElement.textContent;
+            output.innerHTML = slider.value;
+        }
+        document.getElementById('sendButton').onclick = function() {
+    let countersData = {};
+    for (let i = 1; i <= counterId; i++) {
+        const counterValue = document.getElementById('counter-' + i).textContent;
+        countersData['counter' + i] = counterValue;
+    }
+    const switchState = document.querySelector('.switch input').checked ? 'on' : 'off';
+    countersData['switch'] = switchState;
+
+    // Send data to ESP8266
+    sendDataToESP(countersData);
+};
+
+function sendDataToESP(data) {
+    // Assuming you have an endpoint set up to receive data on your ESP8266
+    const endpoint = '/receive-data'; // Replace with your actual endpoint
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+    </script>
+</body>
+</html>
